@@ -156,7 +156,9 @@ def chat_contributions(chat_id: str) -> dict:
 def keep(items: list[dict], chat_id: str, folder: Optional[str] = None, ctx: Context = None) -> dict:
     """
     Keep decisions / key notes for review. `items`: [{title, decision, condition, reason, original_text, kind}]
-    written in clean English. `folder` = the project folder path (used to recognise the company later).
+    Use one concise item per distinct fact. Keep title short and decision self-contained; omit condition,
+    reason, and original_text unless they add necessary, explicitly established information. Do not guess.
+    `folder` = the project folder path (used to recognise the company later).
     Claude Code keeps them on this computer; Claude Desktop keeps them as private unsaved drafts in Supabase.
     Nothing is shared until the person reviews and pushes.
     """
@@ -303,13 +305,16 @@ def review_status() -> dict:
 def keep_prompt() -> str:
     """Keep every decision from this chat that has not been kept yet."""
     return ("Run /keep: call chat_contributions for this chat, then extract EVERY decision and key note from the whole "
-            "chat that is not already kept, write each in clean English, and call keep. Report the counts.")
+            "chat that is not already kept. Make each distinct item concise and self-contained, with a short title. "
+            "Only include condition, reason or original wording when they add necessary information, and never guess. "
+            "Call keep and report the counts.")
 
 
 @mcp.prompt()
 def keeponly(what: str) -> str:
     """Keep only the part you describe."""
-    return f"Run /keeponly: keep ONLY this, nothing else from the chat: {what}. Write it in clean English and call keep."
+    return (f"Run /keeponly: keep ONLY this, nothing else from the chat: {what}. Use concise, distinct items. "
+            "Omit optional fields unless they add necessary information, then call keep.")
 
 
 @mcp.prompt()

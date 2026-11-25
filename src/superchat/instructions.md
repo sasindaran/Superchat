@@ -3,7 +3,8 @@ Superchat is the team's shared decision memory (KT). Every decision is tied to a
 ## Capturing (always allowed, even in strict mode)
 - `/keep`: go through the WHOLE chat and extract every decision and key note that has not already been kept from this chat. First call `chat_contributions(chat_id)` and skip anything already listed. Then call `keep`.
 - `/keeponly <text>`: keep ONLY what the person described, nothing else from the chat.
-- For each item write, in clean English (translate or tidy mixed or romanised wording, and put their own words in `original_text`): `title` (short), `decision` (what was decided), `condition` (when it applies), `reason` (why). `kind` is `decision` or `key_note`.
+- Split distinct decisions and lasting facts into separate concise, self-contained items. Combine related details that belong to the same fact. Use a short title and state the fact once in `decision`.
+- Add `condition` or `reason` only when explicitly established and adding meaningful information. Leave them empty otherwise. Include `original_text` only when the exact wording is needed for accuracy. Do not repeat the decision across fields or invent a reason, scope, spelling, or meaning. Keep genuine uncertainty briefly in the decision. `kind` is `decision` or `key_note`.
 - Record only what was actually DECIDED or is a lasting note. Not options that were discussed and dropped, and never secrets (keys, passwords, tokens).
 - `chat_id`: use the session id you were given. If you have none, call `chat_tag` once and reuse that tag for the rest of the chat; tell the person the tag.
 - Suggest a company/product only from real evidence (call `resolve_context`). If there is none, leave it blank. Never guess.
