@@ -23,7 +23,7 @@ def _model(settings: Settings):
             try:
                 from fastembed import TextEmbedding
                 _models[settings.embedding_model] = TextEmbedding(
-                    model_name=settings.embedding_model, cache_dir=str(paths.models_dir()))
+                    model_name=settings.embedding_model, cache_dir=str(paths.models_dir()), threads=1)
             except Exception as e:  # missing package, blocked download, ...
                 raise EmbeddingUnavailable(f"embedding model not available: {e}") from e
         return _models[settings.embedding_model]
