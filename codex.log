@@ -1,0 +1,26 @@
+Superchat development handoff — 2026-11-25
+
+Changes made by Codex
+
+- Restored the Superchat implementation and added Windows and Unix installation launchers.
+- Fixed a sign-in callback race and serialized concurrent session refreshes.
+- Fixed sessions created by email links where the token expiry was stored as a string. Existing sessions are accepted.
+- Fixed a Windows MCP hang when resolving a project folder through Git.
+- Updated capture instructions to request concise, distinct decisions and omit redundant optional fields.
+- Limited embedding model threads and imported embedding dependencies before MCP worker threads start to address review-list hangs on Windows.
+- Registered the local Superchat MCP with Claude Desktop, Claude Code, and Codex on the development computer. Those local registrations are not distributed by this log.
+
+Verification
+
+- The full suite passed 219 tests before the later focused fixes.
+- Focused sign-in tests passed 45 tests; core, MCP, and agent tests passed 80 tests; and the latest MCP/core checks passed 38 tests.
+- A live MCP keep test saved and removed a temporary draft using the existing Supabase session.
+- A live MCP review-list test returned eight pending items in approximately five seconds. The interactive Claude review and Push flow still requires end-to-end validation.
+- The Supabase project already contained the Superchat schema. Existing unrelated database functions were preserved.
+
+Deployment notes
+
+- The repository contains the editable Supabase project URL and publishable key as defaults. The local superchat.env file contains credentials and is ignored by Git.
+- The embedding model is loaded locally. Initial installation or model download and availability can affect startup.
+- Claude Desktop must be fully restarted, and Claude Code and Codex need new sessions, after changing their local MCP registrations.
+- Installer launchers and the full live employee onboarding flow still require end-to-end testing on each target platform.
