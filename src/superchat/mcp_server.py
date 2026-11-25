@@ -346,5 +346,11 @@ def review() -> str:
 
 def run() -> None:
     paths.home()
+    # Native embedding dependencies can hang when first imported in an MCP worker thread on Windows.
+    # Import them on the main thread before starting the server; model loading remains lazy.
+    try:
+        import fastembed  # noqa: F401
+    except ImportError:
+        pass
     print(f"[superchat] MCP server {__version__} starting", file=sys.stderr, flush=True)
     mcp.run(transport="stdio")
