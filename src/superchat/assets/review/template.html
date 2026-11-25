@@ -1,0 +1,279 @@
+<title>Superchat Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of decision cards, a sticky bar at the bottom with the single Push button. */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --ink:#1b2321; --muted:#5d6a66; --line:#d5dcd9;
+  --accent:#0f6b5c; --accent-ink:#ffffff; --accent-soft:#dcefe9;
+  --warn:#b4540a; --warn-soft:#fbe9d8; --bad:#b3261e; --bad-soft:#fbe3e1; --ok:#1f7a3d;
+  --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121816; --surface:#1a2220; --ink:#e7eeeb; --muted:#9aaba5; --line:#2e3a37;
+  --accent:#4fc1a9; --accent-ink:#0c1512; --accent-soft:#16352e;
+  --warn:#f0a366; --warn-soft:#3a2615; --bad:#f28b82; --bad-soft:#3d1c1a; --ok:#6fd08c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121816; --surface:#1a2220; --ink:#e7eeeb; --muted:#9aaba5; --line:#2e3a37;
+  --accent:#4fc1a9; --accent-ink:#0c1512; --accent-soft:#16352e;
+  --warn:#f0a366; --warn-soft:#3a2615; --bad:#f28b82; --bad-soft:#3d1c1a; --ok:#6fd08c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);margin:0;
+  padding-block:24px 120px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:24px;margin:0;font-weight:600}
+.sub{color:var(--muted);margin:4px 0 0}
+.notice{border-radius:8px;padding:12px 14px;border:1.5px solid var(--line);background:var(--surface)}
+.notice.warn{border-color:var(--warn);background:var(--warn-soft)}
+.notice.bad{border-color:var(--bad);background:var(--bad-soft)}
+.notice.ok{border-color:var(--ok)}
+.notice b{display:block}
+.bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.card.off{opacity:.55}
+.card.problem{border-color:var(--bad)}
+.head{display:flex;gap:10px;align-items:flex-start}
+.head input[type=checkbox]{width:20px;height:20px;margin-top:4px;flex:none;accent-color:var(--accent)}
+.head .t{flex:1;min-width:0;display:grid;gap:6px}
+input[type=text],textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:60px}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+input.title{font-weight:600}
+.meta{font:12px var(--mono);color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field label{display:block;font:500 12px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.field .why{font-size:12px;margin-top:3px;color:var(--muted)}
+.field.need input{border-color:var(--bad)}
+.field.need .why{color:var(--bad)}
+.field.empty-product input{border-color:var(--bad)}
+.field.empty-product .why{color:var(--bad);font-weight:500}
+.badge{display:inline-block;font:500 11px var(--mono);padding:2px 7px;border-radius:99px;border:1.5px solid currentColor}
+.badge.new{color:var(--warn)} .badge.known{color:var(--ok)} .badge.hint{color:var(--muted)}
+.similar{border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 6px 6px 0;padding:8px 12px;display:grid;gap:8px;font-size:14px}
+.similar .hit{display:grid;gap:4px}
+.similar .hit b{font-weight:600}
+.similar select{width:auto;max-width:100%}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1.5px solid var(--line);
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .in{max-width:860px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.bar .sum{font-size:14px;min-width:0;flex:1 1 240px}
+.bar .sum small{display:block;color:var(--muted)}
+button.push{font:600 15px var(--sans);background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:11px 22px;cursor:pointer}
+button.push:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{font:500 14px var(--sans);background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:9px 14px;cursor:pointer}
+.empty{text-align:center;color:var(--muted);padding:40px 12px}
+@media (max-width:640px){.pair{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+  <header>
+    <h1>Superchat Review</h1>
+    <p class="sub">Everything you kept since your last push. Tick what to share, set the company, then press Push once.</p>
+  </header>
+  <div id="status" aria-live="polite"></div>
+  <div class="bulk" id="bulk" hidden>
+    <span>Company for every ticked item that has none:</span>
+    <input type="text" id="bulkCompany" list="companyList" placeholder="Choose or type a company" style="width:auto;flex:1 1 200px;max-width:320px">
+    <button class="ghost" id="bulkApply" type="button">Apply</button>
+  </div>
+  <div id="cards"></div>
+</main>
+<datalist id="companyList"></datalist>
+<div class="bar"><div class="in">
+  <div class="sum" id="sum" aria-live="polite"></div>
+  <button class="push" id="push" type="button" disabled>Push</button>
+</div></div>
+
+<script>
+(function () {
+  'use strict';
+  var SERVER = 'host:superchat';                        // the local `superchat` MCP server on this computer
+  var EXAMPLE = {
+    cutoff: 'example', companies: [{ id: 'c1', name: 'Acme', products: [{ id: 'p1', name: 'Billing' }] }],
+    items: [
+      { keep_id: 'e1', source: 'queue', kind: 'decision', title: 'Retry failed payments three times',
+        decision: 'Retry a failed card payment three times, then email the client.', condition: 'the card is declined',
+        reason: 'most declines are temporary', kept_at: '2026-11-25T10:20:00Z',
+        suggestion: { strength: 'strong', evidence: 'this project folder is linked to it', company: { id: 'c1', name: 'Acme' }, product: { id: 'p1', name: 'Billing' } },
+        similar: [{ id: 's1', title: 'Never auto-retry payments', decision: 'Do not retry card payments automatically.', company: 'Acme', product: null, similarity: 0.86 }] },
+      { keep_id: 'e2', source: 'draft', kind: 'key_note', title: 'Standup moves to 10am', decision: 'The weekly standup now starts at 10am.',
+        kept_at: '2026-11-25T11:05:00Z', suggestion: { strength: 'none', evidence: 'no known company is mentioned', company: null, product: null }, similar: [] }
+    ]
+  };
+
+  var mcp = null, list = null, items = [], example = false, pushing = false, confirmed = false, done = false;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === 'text') el.textContent = attrs[k];
+      else if (k === 'class') el.className = attrs[k];
+      else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== false && attrs[k] != null) el.setAttribute(k, attrs[k] === true ? '' : attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c != null) el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return el;
+  }
+
+  var key = function (s) { return (s || '').trim().toLowerCase().replace(/\s+/g, ' '); };
+  var company = function (name) { return (list.companies || []).find(function (c) { return key(c.name) === key(name); }); };
+  var product = function (co, name) { return co && (co.products || []).find(function (p) { return key(p.name) === key(name); }); };
+
+  function toState(it) {
+    var s = it.suggestion || {}, strong = s.strength === 'strong';
+    return { src: it, checked: true, title: it.title, decision: it.decision, condition: it.condition || '', reason: it.reason || '',
+             kind: it.kind || 'decision', company: strong && s.company ? s.company.name : '', product: strong && s.product ? s.product.name : '',
+             marks: {} };                          // marks[similar id] = 'duplicate' | 'conflict'
+  }
+
+  function status(kind, title, text) {
+    var box = $('status'); box.textContent = '';
+    if (!title) return;
+    box.appendChild(h('div', { class: 'notice ' + kind }, h('b', { text: title }), text ? h('span', { text: text }) : null));
+  }
+
+  function invalid() { return items.filter(function (s) { return s.checked && !s.company.trim(); }); }
+
+  function render() {
+    var cards = $('cards'); cards.textContent = '';
+    $('bulk').hidden = !items.length || done;
+    var dl = $('companyList'); dl.textContent = '';
+    (list.companies || []).forEach(function (c) { dl.appendChild(h('option', { value: c.name })); });
+    if (!items.length) cards.appendChild(h('div', { class: 'empty', text: done ? 'All done.' : 'Nothing to review. Use /keep in a chat to add decisions.' }));
+    items.forEach(function (s) { cards.appendChild(card(s)); });
+    summary();
+  }
+
+  function card(s) {
+    var co = company(s.company), needCompany = s.checked && !s.company.trim();
+    var emptyProduct = s.checked && s.company.trim() && !s.product.trim();
+    var pdl = 'pl-' + s.src.keep_id;
+    var el = h('div', { class: 'card' + (s.checked ? '' : ' off') + (needCompany ? ' problem' : '') });
+
+    var cb = h('input', { type: 'checkbox', 'aria-label': 'Share this item', onchange: function () { s.checked = cb.checked; confirmed = false; render(); } });
+    cb.checked = s.checked;
+    var title = h('input', { type: 'text', class: 'title', value: s.title, 'aria-label': 'Title', oninput: function () { s.title = title.value; summary(); } });
+    el.appendChild(h('div', { class: 'head' }, cb, h('div', { class: 't' }, title,
+      h('div', { class: 'meta' }, h('span', { text: s.kind === 'key_note' ? 'key note' : 'decision' }),
+        h('span', { text: s.src.source === 'draft' ? 'draft in Supabase' : 'on this computer' }),
+        h('span', { text: (s.src.kept_at || '').slice(0, 16).replace('T', ' ') })))));
+
+    var dec = h('textarea', { 'aria-label': 'Decision', oninput: function () { s.decision = dec.value; } }); dec.value = s.decision;
+    el.appendChild(dec);
+    var cond = h('input', { type: 'text', value: s.condition, placeholder: 'When does this apply?', 'aria-label': 'Condition', oninput: function () { s.condition = cond.value; } });
+    var why = h('input', { type: 'text', value: s.reason, placeholder: 'Why?', 'aria-label': 'Reason', oninput: function () { s.reason = why.value; } });
+    el.appendChild(h('div', { class: 'pair' }, cond, why));
+
+    var compIn = h('input', { type: 'text', list: 'companyList', value: s.company, placeholder: 'Choose or type a new company', 'aria-label': 'Company',
+      onchange: function () { s.company = compIn.value; if (!company(s.company)) s.product = s.product; confirmed = false; render(); } });
+    var prodIn = h('input', { type: 'text', list: pdl, value: s.product, placeholder: 'Optional', 'aria-label': 'Product',
+      onchange: function () { s.product = prodIn.value; render(); } });
+    var pl = h('datalist', { id: pdl });
+    ((co && co.products) || []).forEach(function (p) { pl.appendChild(h('option', { value: p.name })); });
+    var cField = h('div', { class: 'field' + (needCompany ? ' need' : '') }, h('label', { text: 'Company (required)' }), compIn,
+      s.company.trim() ? h('div', { class: 'why' }, h('span', { class: 'badge ' + (co ? 'known' : 'new'), text: co ? 'existing company' : 'new company' }),
+        s.src.suggestion && s.src.suggestion.strength === 'strong' && s.src.suggestion.company && key(s.company) === key(s.src.suggestion.company.name)
+          ? ' ' + s.src.suggestion.evidence : '') : (needCompany ? h('div', { class: 'why', text: 'Pick a company to share this.' }) : null));
+    var pField = h('div', { class: 'field' + (emptyProduct ? ' empty-product' : '') }, h('label', { text: 'Product (optional)' }), prodIn, pl,
+      emptyProduct ? h('div', { class: 'why', text: 'No product: this will apply to ALL of ' + s.company.trim() + "'s products. Pick one if it is only for one." })
+                   : (s.product.trim() && co && !product(co, s.product) ? h('div', { class: 'why' }, h('span', { class: 'badge new', text: 'new product' })) : null));
+    el.appendChild(h('div', { class: 'pair' }, cField, pField));
+
+    if ((s.src.similar || []).length) {
+      var box = h('div', { class: 'similar' }, h('b', { text: 'Looks like something already saved' }));
+      s.src.similar.forEach(function (x) {
+        var sel = h('select', { 'aria-label': 'How does this relate to: ' + x.title, onchange: function () {
+          if (sel.value) s.marks[x.id] = sel.value; else delete s.marks[x.id];
+          if (sel.value === 'duplicate') s.checked = false;
+          confirmed = false; render(); } },
+          h('option', { value: '', text: 'Unrelated, keep as new' }), h('option', { value: 'duplicate', text: 'Same thing: do not share' }),
+          h('option', { value: 'conflict', text: 'Disagrees with it: share and link as a conflict' }));
+        sel.value = s.marks[x.id] || '';
+        box.appendChild(h('div', { class: 'hit' }, h('span', {}, h('b', { text: x.title }), ' · ' + x.company + (x.product ? ' / ' + x.product : ' (company-wide)') +
+          (x.similarity != null ? ' · ' + Math.round(x.similarity * 100) + '% alike' : '')), h('span', { text: x.decision }), sel));
+      });
+      el.appendChild(box);
+    }
+    return el;
+  }
+
+  function summary() {
+    var on = items.filter(function (s) { return s.checked; }), off = items.length - on.length, bad = invalid().length;
+    var s = $('sum'); s.textContent = '';
+    if (done) { s.appendChild(h('span', { text: 'Pushed.' })); $('push').disabled = true; return; }
+    s.appendChild(h('span', { text: 'Push ' + on.length + (on.length === 1 ? ' item' : ' items') + (off ? ', delete ' + off + ' un-ticked for good' : '') }));
+    if (bad) s.appendChild(h('small', { text: bad + (bad === 1 ? ' item needs' : ' items need') + ' a company before you can push.' }));
+    else if (off && !confirmed) s.appendChild(h('small', { text: 'Un-ticked items are removed completely. Press Push, then confirm.' }));
+    var btn = $('push');
+    btn.textContent = (off && !confirmed && !bad) ? 'Push…' : (confirmed && off ? 'Confirm: push and delete ' + off : 'Push');
+    btn.disabled = pushing || example || !mcp || !items.length || bad > 0;
+  }
+
+  function payload() {
+    var out = [], remove = [];
+    items.forEach(function (s) {
+      var k = s.src.keep_id;
+      if (!s.checked) { remove.push(k); return; }
+      var co = company(s.company), pr = product(co, s.product);
+      var conflicts = Object.keys(s.marks).filter(function (id) { return s.marks[id] === 'conflict'; })
+        .map(function (id) { return { other_id: id, note: 'flagged during review' }; });
+      out.push({ keep_id: k, chat_id: s.src.chat_id || null, kind: s.kind, title: s.title.trim(), decision: s.decision.trim(),
+        condition: s.condition.trim() || null, reason: s.reason.trim() || null, original_text: s.src.original_text || null,
+        source_agent: s.src.source_agent || null, folder_key: s.src.folder_key || null, kept_at: s.src.kept_at || null,
+        company: co ? { id: co.id } : { name: s.company.trim() },
+        product: s.product.trim() ? (pr ? { id: pr.id } : { name: s.product.trim() }) : null, conflicts: conflicts });
+    });
+    return { cutoff: list.cutoff, items: out, remove_keep_ids: remove };
+  }
+
+  function explain(e) {
+    var c = e && e.code;
+    if (c === 'approval_required' || c === 'not_granted') return ['warn', 'Needs your approval', 'Allow this page to use Superchat when Claude asks, then press Push again.'];
+    if (c === 'server_not_connected') return ['bad', 'Superchat is not connected', 'Open this page in the Claude desktop app, with the superchat MCP server installed (run: superchat setup) and Claude restarted.'];
+    if (c === 'not_in_manifest') return ['bad', 'This page is not allowed to use Superchat', 'Re-open it and allow Superchat when asked.'];
+    if (c === 'server_unavailable' || c === 'upstream_error') return ['warn', 'Superchat did not answer', 'Nothing may have been saved. Press Load again to see what is still waiting before pushing again.'];
+    if (c === 'tool_error') return ['bad', 'Nothing was pushed', (e.message || 'The push was refused.') + ' Your list is unchanged.'];
+    return ['bad', 'Something went wrong', (e && e.message) || 'Unknown error.'];
+  }
+
+  function load() {
+    if (!mcp) {
+      example = true; list = EXAMPLE; items = EXAMPLE.items.map(toState); render();
+      status('warn', 'Example data', 'These are made-up examples. Open this page in the Claude desktop app with the Superchat MCP connected to review your real items.');
+      return;
+    }
+    status('', 'Loading…', '');
+    mcp.callTool(SERVER, 'review_list', {}).then(function (r) {
+      list = r.payload; example = false; items = (list.items || []).map(toState); done = false; confirmed = false; status('', '', ''); render();
+    }).catch(function (e) { var x = explain(e); status(x[0], x[1], x[2]); list = { companies: [], items: [] }; items = []; render(); });
+  }
+
+  function push() {
+    var off = items.filter(function (s) { return !s.checked; }).length;
+    if (off && !confirmed) { confirmed = true; summary(); return; }
+    pushing = true; summary(); status('', 'Pushing…', '');
+    mcp.callTool(SERVER, 'push_review', payload()).then(function (r) {
+      var p = r.payload || {}; pushing = false; done = true; items = [];
+      status('ok', 'Pushed', (p.saved || 0) + ' saved' + (p.skipped ? ', ' + p.skipped + ' were already there' : '') + (p.removed ? ', ' + p.removed + ' deleted' : '') +
+        (p.conflicts ? ', ' + p.conflicts + ' conflict' + (p.conflicts === 1 ? '' : 's') + ' linked' : '') + '.');
+      render();
+    }).catch(function (e) { pushing = false; confirmed = false; var x = explain(e); status(x[0], x[1], x[2]); summary(); });
+  }
+
+  $('push').addEventListener('click', push);
+  $('bulkApply').addEventListener('click', function () {
+    var v = $('bulkCompany').value.trim(); if (!v) return;
+    items.forEach(function (s) { if (s.checked && !s.company.trim()) s.company = v; }); confirmed = false; render();
+  });
+
+  list = { companies: [], items: [] }; render();
+  var gate = (window.claude && window.claude.use) ? window.claude.use('mcp') : Promise.resolve(null);
+  var timer = setTimeout(function () { if (!list.items.length && !mcp) load(); }, 12000);
+  gate.then(function (m) { clearTimeout(timer); mcp = m; load(); }).catch(function () { clearTimeout(timer); mcp = null; load(); });
+})();
+</script>
