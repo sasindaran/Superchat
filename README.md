@@ -8,6 +8,8 @@ It runs entirely through MCP and Claude: no server to host, no extra app. Works 
 
 ## Install
 
+Download or clone this repository. On Windows, double-click `install.bat`. On macOS or Linux, run `sh install.sh` in a terminal. The installer sets up detected Claude applications and can start email sign-in. Restart Claude Desktop and start a new Claude Code session afterwards. On Linux, the installer supports Claude Code.
+
 Give the link to this repository to Claude Code (or any coding agent) and say *"set this up"*. It follows [AGENTS.md](AGENTS.md). You type your work email and click the sign-in link that is emailed to you. Nothing else.
 
 ## Commands
