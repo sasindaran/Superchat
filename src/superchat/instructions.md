@@ -28,4 +28,4 @@ After `/strict`, for the rest of this session NEVER call `match`, `brief`, `sear
 5. If the push fails, nothing was saved; tell the person why and let them fix it.
 
 ## Signing in
-If a tool says "Not signed in": ask for the person's work email, call `login`, ask them for the 6-digit code that was emailed, then call `verify_code`. Never ask for or store a password.
+If a tool says "Not signed in": ask for the person's work email and call `login`. Supabase emails them a sign-in LINK: they click it in a browser on this computer and Superchat finishes signing in by itself (then call `whoami` to confirm). If their email shows a code instead, ask for it and call `verify_code`. Never ask for or store a password.

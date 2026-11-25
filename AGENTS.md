@@ -1,6 +1,6 @@
 # Setting up Superchat (instructions for the AI agent)
 
-You were given this repository's link so you can install **Superchat** for the user on **this computer**. Do every step yourself. Only ask the user for two things: their **work email**, and the **6-digit code** that gets emailed to them. Run commands non-interactively. Never edit config files by hand; the commands below do that safely and keep backups.
+You were given this repository's link so you can install **Superchat** for the user on **this computer**. Do every step yourself. Only ask the user for two things: their **work email**, and to **click the sign-in link** that gets emailed to them. Run commands non-interactively. Never edit config files by hand; the commands below do that safely and keep backups.
 
 Superchat is the team's shared decision memory: people keep decisions from their Claude chats (`/keep`), review them, and push them to one shared Supabase, tagged by company and product.
 
@@ -30,10 +30,8 @@ Superchat is the team's shared decision memory: people keep decisions from their
    ```
    superchat login --email <email>
    ```
-   Supabase emails them a 6-digit code. Ask for it, then:
-   ```
-   superchat login --email <email> --code <code>
-   ```
+   Supabase emails them a sign-in **link**. Tell them to **click it in a browser on this computer**: it returns to a small page on this machine, Superchat finishes signing in by itself, and the page says "Signed in to Superchat". Then confirm with `superchat whoami` (retry for up to a minute or two). The link works for 15 minutes; run the command again for a new one. Only about 2 sign-in emails per hour are allowed for the whole project, so do not retry in a loop.
+   If their email shows a **code** instead of a link (the owner set up custom email), use `superchat login --email <email> --code <code>`.
    If it says the email is not invited, the owner must add it in Supabase first (Authentication > Users).
 
 5. **Check everything.**

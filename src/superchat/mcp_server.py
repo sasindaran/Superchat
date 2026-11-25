@@ -78,11 +78,31 @@ def _find_product(company: dict, ref: Optional[str]) -> Optional[dict]:
 
 # ---- sign-in -----------------------------------------------------------------------------------
 
+_login = {"state": "idle", "error": None}
+
+
+def _finish_login(ll, settings) -> None:
+    try:
+        ll.wait(settings, 900)
+        _login.update(state="done", error=None)
+    except Exception as e:
+        _login.update(state="failed", error=str(e))
+
+
 @mcp.tool()
 def login(email: str) -> str:
-    """Start signing in: Supabase emails a 6-digit code to this work email. Then call verify_code."""
-    auth.request_code(_settings(), email)
-    return f"A 6-digit code was emailed to {email.strip().lower()}. Ask the person for it, then call verify_code."
+    """
+    Start signing in: Supabase emails a sign-in LINK to this work email. Tell the person to click it in a browser on
+    THIS computer; Superchat finishes signing in by itself. Then call whoami to confirm. (If their email shows a code
+    instead, ask for it and call verify_code.)
+    """
+    import threading
+    settings = _settings()
+    ll = auth.start_link_login(settings, email)
+    _login.update(state="waiting", error=None)
+    threading.Thread(target=_finish_login, args=(ll, settings), daemon=True, name="superchat-login-wait").start()
+    return (f"A sign-in link was emailed to {email.strip().lower()}. Ask them to click it in a browser on this computer "
+            "(within 15 minutes). Then call whoami to confirm.")
 
 
 @mcp.tool()
@@ -96,8 +116,13 @@ def verify_code(email: str, code: str) -> str:
 def whoami() -> dict:
     """Who is signed in on this computer, and which Supabase project is in use."""
     s = _settings()
-    return {"signed_in_as": (auth.whoami() or {}).get("email"), "supabase_url": s.supabase_url,
-            "version": __version__, "waiting_in_local_queue": queue.count()}
+    out = {"signed_in_as": (auth.whoami() or {}).get("email"), "supabase_url": s.supabase_url,
+           "version": __version__, "waiting_in_local_queue": queue.count()}
+    if _login["state"] == "waiting":
+        out["sign_in"] = "waiting for the emailed link to be clicked"
+    elif _login["state"] == "failed":
+        out["sign_in"] = f"failed: {_login['error']}"
+    return out
 
 
 @mcp.tool()

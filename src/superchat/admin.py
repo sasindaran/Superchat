@@ -140,3 +140,31 @@ def init(c, reset: bool = False, admins=(), assume_yes: bool = False) -> dict:
     after = inventory(c)
     return {"schema_version": version, "dropped_tables": dropped, "tables_now": sorted(after["tables"]),
             "auth_users": after["auth_users"], "admins": [a.strip().lower() for a in admins]}
+
+
+def configure_auth(token: str, project_ref: str, client=None) -> dict:
+    """
+    Lock the project's sign-in to invited people and allow Superchat's local return addresses, using a short-lived
+    Supabase personal access token (https://supabase.com/dashboard/account/tokens). Existing allowed addresses are kept.
+    """
+    import httpx
+    from . import auth
+    if not token.startswith("sbp_"):
+        raise AdminError("that does not look like a Supabase personal access token (it starts with sbp_)")
+    http = client or httpx.Client(timeout=60)
+    url = f"https://api.supabase.com/v1/projects/{project_ref}/config/auth"
+    h = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    cur = http.get(url, headers=h)
+    if cur.status_code in (401, 403):
+        raise AdminError("Supabase refused the access token (expired, or not allowed to manage this project)")
+    if cur.status_code >= 400:
+        raise AdminError(f"could not read the project's sign-in settings (HTTP {cur.status_code})")
+    cfg = cur.json()
+    existing = [x.strip() for x in (cfg.get("uri_allow_list") or "").split(",") if x.strip()]
+    allow = existing + [u for u in auth.ALLOW_LIST if u not in existing]
+    r = http.patch(url, headers=h, json={"disable_signup": True, "uri_allow_list": ",".join(allow)})
+    if r.status_code >= 400:
+        raise AdminError(f"Supabase did not accept the change: {r.text[:200]}")
+    return {"public_signup_disabled": True, "return_addresses_allowed": len(auth.ALLOW_LIST),
+            "kept_existing_addresses": len(existing), "emails_per_hour": cfg.get("rate_limit_email_sent"),
+            "custom_smtp": bool(cfg.get("smtp_host")), "email_templates_editable": bool(cfg.get("smtp_host"))}

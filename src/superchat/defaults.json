@@ -1,6 +1,6 @@
 {
   "supabase_url": "https://trhvoeqtbuoebdozeiko.supabase.co",
-  "supabase_key": "",
+  "supabase_key": "sb_publishable_e0aiJMIUNQ8vP-MeHNr1FA_NfVpyX4-",
   "embedding_model": "BAAI/bge-small-en-v1.5",
   "embedding_tag": "bge-small-en-v1.5",
   "embedding_dim": 384,

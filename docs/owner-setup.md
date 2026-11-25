@@ -15,14 +15,22 @@ superchat admin init --reset --yes         # ONLY if the database holds an older
 
 No database password handy? Paste [`supabase/setup.sql`](../supabase/setup.sql) into Supabase > **SQL Editor** and run it, then run [`supabase/seed_admin.sql`](../supabase/seed_admin.sql) with your email. If the project holds an older app's data, the old `vector` extension must be dropped first, which is what `--reset` does.
 
-## 2. Lock sign-up and make the email show a code
-1. **Authentication > Sign In / Providers**: turn **off** "Allow new users to sign up" (so only people you invite can get in). Keep **Email** enabled.
-2. **Authentication > Email Templates**: open the **Magic Link** template (and **Confirm signup** if present) and make sure the body contains the six-digit code, for example:
-   ```html
-   <p>Your Superchat code is: <b>{{ .Token }}</b></p>
-   ```
-   (Superchat signs people in with this code, not with a link.)
-3. Supabase's built-in email sender has a low hourly limit on the free tier. If invites or codes stop arriving, add your own SMTP under **Authentication > SMTP Settings**.
+## 2. Lock sign-up and allow the sign-in return address
+Put a short-lived **Supabase personal access token** (https://supabase.com/dashboard/account/tokens > Generate new token) on the `SUPABASE_ACCESS_TOKEN=` line of `superchat.env`, then run:
+
+```
+superchat admin auth
+```
+
+This turns **off** public sign-up (only people you invite can get in) and allows Superchat's local return addresses (`http://127.0.0.1:53682/**` and the next 19 ports). It keeps any addresses you already had. **Delete the token afterwards** (same Supabase page) and blank the line.
+
+Or by hand: Authentication > Sign In / Providers > turn **off** "Allow new users to sign up"; Authentication > URL Configuration > Redirect URLs > add `http://127.0.0.1:53682/**` through `http://127.0.0.1:53701/**`.
+
+**How people sign in.** Supabase emails a **link**. Superchat starts a one-shot listener on `127.0.0.1` (reachable only from the same computer), and the link returns to it, so people click the link in a browser on their own computer and are signed in.
+
+**Free-tier limits to know about**
+- The built-in email sender allows only about **2 sign-in emails per hour for the whole project**, and the email templates cannot be edited. That is fine for onboarding a few people, but add your own SMTP provider (Authentication > SMTP Settings; several have free tiers) before a larger rollout. That lifts the limit and lets you edit templates, so you can show a code (`{{ .Token }}`) and people can use `superchat login --code`.
+- Sessions refresh themselves for a long time, so each person normally signs in once per computer.
 
 ## 3. Invite the team
 **Authentication > Users > Add user > Send invitation** (or "Create new user" with *Auto Confirm User*). Everyone you add can read all saved decisions and can only change their own. Employees are *app users*, **not** Supabase team members: never add them to the Supabase project itself, because that gives dashboard access that skips the rules.

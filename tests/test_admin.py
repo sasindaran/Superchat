@@ -199,3 +199,51 @@ def test_env_value_and_the_restructured_owner_file_format(tmp_path):
     assert admin.env_value(f, "SUPERCHAT_SUPABASE_KEY") == "" and admin.env_value(f, "NOPE") == ""
     assert admin.parse_env(f)["password"] == "p#ss w0rd=1"            # '#', spaces and '=' survive
     assert admin.parse_env(f)["host"] == "h.example.com"
+
+
+# ---- locking down sign-in ---------------------------------------------------------------------------------------
+
+def _supabase_api(config, patched):
+    import httpx
+
+    def handler(req):
+        if req.method == "GET":
+            return httpx.Response(200, json=config)
+        patched.append(json.loads(req.content))
+        return httpx.Response(200, json={})
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_configure_auth_disables_signup_keeps_existing_addresses_and_adds_ours():
+    from superchat import auth
+    patched = []
+    out = admin.configure_auth("sbp_x", "ref", _supabase_api(
+        {"uri_allow_list": "https://app.example.com/**, http://localhost:3000/**", "rate_limit_email_sent": 2, "smtp_host": None}, patched))
+    sent = patched[0]
+    assert sent["disable_signup"] is True and set(sent) == {"disable_signup", "uri_allow_list"}      # touches nothing else
+    allowed = sent["uri_allow_list"].split(",")
+    assert allowed[:2] == ["https://app.example.com/**", "http://localhost:3000/**"] and set(auth.ALLOW_LIST) <= set(allowed)
+    assert out["kept_existing_addresses"] == 2 and out["emails_per_hour"] == 2 and out["custom_smtp"] is False
+
+
+def test_configure_auth_is_idempotent():
+    from superchat import auth
+    patched = []
+    admin.configure_auth("sbp_x", "ref", _supabase_api({"uri_allow_list": ",".join(auth.ALLOW_LIST)}, patched))
+    assert patched[0]["uri_allow_list"].split(",") == auth.ALLOW_LIST
+
+
+def test_configure_auth_rejects_wrong_kinds_of_token_and_explains_refusals():
+    import httpx
+    with pytest.raises(admin.AdminError, match="sbp_"):
+        admin.configure_auth("sb_secret_abc", "ref")
+    refused = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(401, json={"message": "bad"})))
+    with pytest.raises(admin.AdminError, match="refused the access token"):
+        admin.configure_auth("sbp_x", "ref", refused)
+
+
+def test_cli_admin_auth_needs_a_token_in_the_env_file(tmp_path, capsys):
+    env = tmp_path / "superchat.env"
+    env.write_text("SUPERCHAT_SUPABASE_URL=https://ref.supabase.co\nSUPABASE_ACCESS_TOKEN=\n")
+    assert cli.main(["admin", "auth", "--env", str(env)]) == 2
+    assert "SUPABASE_ACCESS_TOKEN" in capsys.readouterr().err

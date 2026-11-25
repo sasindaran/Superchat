@@ -99,6 +99,33 @@ def doctor(deep: bool = False) -> int:
     return 1 if bad else 0
 
 
+def login_in_background(s: config.Settings, email: str, wait: int = 900) -> None:
+    """Start a listener in a detached process, then have Supabase email the link; returns immediately."""
+    import socket
+    import subprocess
+    import time as _t
+    ports = list(auth.LOOPBACK_PORTS)
+    probe = auth.LinkLogin(tuple(ports))            # find a free port, then free it for the background process
+    port, nonce = probe.port, probe.nonce
+    probe.close()
+    kw = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL, "close_fds": True}
+    if sys.platform == "win32":
+        kw["creationflags"] = 0x00000008 | 0x00000200   # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+    else:
+        kw["start_new_session"] = True
+    subprocess.Popen([sys.executable, "-m", "superchat", "login-serve", "--port", str(port), "--nonce", nonce,
+                      "--wait", str(wait)], **kw)
+    for _ in range(80):                              # wait until it is really listening before emailing the link
+        try:
+            socket.create_connection(("127.0.0.1", port), timeout=0.25).close()
+            break
+        except OSError:
+            _t.sleep(0.1)
+    else:
+        raise auth.AuthError("Could not start the local sign-in listener.")
+    auth.request_code(s, email, redirect_to=f"http://127.0.0.1:{port}/cb/{nonce}")
+
+
 def _agents(choice: str) -> list:
     from .agents import claude_code, claude_desktop
     table = {"claude-code": claude_code, "claude-desktop": claude_desktop}
@@ -154,7 +181,13 @@ def main(argv=None) -> int:
 
     lg = sub.add_parser("login", help="sign in with an emailed code")
     lg.add_argument("--email", required=True)
-    lg.add_argument("--code", help="the 6-digit code; leave out to be emailed one")
+    lg.add_argument("--code", help="the code from the email, if your email shows one (custom email setups only)")
+    lg.add_argument("--wait", type=int, default=0, help="stay and wait this many seconds for the link to be clicked "
+                    "(default: finish in the background and return at once)")
+    ls = sub.add_parser("login-serve", help=argparse.SUPPRESS)
+    ls.add_argument("--port", type=int, required=True)
+    ls.add_argument("--nonce", required=True)
+    ls.add_argument("--wait", type=int, default=900)
     sub.add_parser("logout")
     sub.add_parser("whoami")
     sub.add_parser("status", help="how many kept decisions are waiting")
@@ -175,7 +208,7 @@ def main(argv=None) -> int:
     su.add_argument("--key", help="Supabase publishable key")
     su.add_argument("--agents", default="auto", help="auto, or a comma list of: claude-code,claude-desktop")
     ad = sub.add_parser("admin", help="owner only: install the database schema")
-    ad.add_argument("action", choices=["status", "init"])
+    ad.add_argument("action", choices=["status", "init", "auth"])
     ad.add_argument("--env", default="superchat.env", help="file holding the database credentials (default: superchat.env)")
     ad.add_argument("--reset", action="store_true", help="wipe the old contents of the public schema first")
     ad.add_argument("--yes", action="store_true", help="confirm --reset")
@@ -206,6 +239,15 @@ def main(argv=None) -> int:
             return setup(a.url, a.key, a.agents)
         if a.cmd == "uninstall":
             return uninstall()
+        if a.cmd == "admin" and a.action == "auth":
+            from . import admin
+            tok = admin.env_value(a.env, "SUPABASE_ACCESS_TOKEN")
+            url = admin.env_value(a.env, "SUPERCHAT_SUPABASE_URL") or config.load().supabase_url
+            if not tok:
+                raise ValueError(f"put a Supabase personal access token on the SUPABASE_ACCESS_TOKEN= line of {a.env} "
+                                 "(https://supabase.com/dashboard/account/tokens), then run this again; delete the token afterwards")
+            print(json.dumps(admin.configure_auth(tok, url.split("//", 1)[-1].split(".", 1)[0]), indent=2))
+            return 0
         if a.cmd == "admin":
             from . import admin
             conn = admin.connect(admin.parse_env(a.env))
@@ -231,15 +273,25 @@ def main(argv=None) -> int:
             else:
                 print(json.dumps(vault.sync(Api(s), s)))
             return 0
+        if a.cmd == "login-serve":
+            r = auth.LinkLogin((a.port,), a.nonce).wait(config.load(), a.wait)
+            print(f"Signed in as {r['user']['email']}.")
+            return 0
         if a.cmd == "login":
             s = config.load()
             if a.code:
                 r = auth.verify_code(s, a.email, a.code)
                 print(f"Signed in as {r['user']['email']}.")
+            elif a.wait:
+                ll = auth.start_link_login(s, a.email)
+                print(f"A sign-in link was emailed to {a.email.strip().lower()}. Click it in a browser on THIS computer; waiting...")
+                r = ll.wait(s, a.wait)
+                print(f"Signed in as {r['user']['email']}.")
             else:
-                auth.request_code(s, a.email)
-                print(f"A 6-digit code was emailed to {a.email.strip().lower()}. Then run: "
-                      f"superchat login --email {a.email} --code <code>")
+                login_in_background(s, a.email)
+                print(f"A sign-in link was emailed to {a.email.strip().lower()}.\n"
+                      "Click it in a browser on THIS computer. Superchat finishes signing in by itself; "
+                      "check with: superchat whoami")
             return 0
         if a.cmd == "logout":
             auth.logout()
