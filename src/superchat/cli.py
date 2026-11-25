@@ -76,7 +76,7 @@ def doctor(deep: bool = False) -> int:
     if me:
         _print(OK, f"Signed in as {me['email']}")
     else:
-        _print(WARN, "Not signed in", "superchat login --email you@company.com, then --code <the emailed code>")
+        _print(WARN, "Not signed in", "superchat login --email you@company.com, then click the emailed link on this computer")
     n = queue.count()
     _print(OK, f"{n} kept decision(s) waiting for review on this computer")
     from .agents import claude_code, claude_desktop
@@ -108,21 +108,32 @@ def login_in_background(s: config.Settings, email: str, wait: int = 900) -> None
     probe = auth.LinkLogin(tuple(ports))            # find a free port, then free it for the background process
     port, nonce = probe.port, probe.nonce
     probe.close()
-    kw = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL, "close_fds": True}
+    log = paths.home() / "login.log"                # the background process writes here, so failures can be read
+    out = open(log, "ab")
+    cmd = [sys.executable, "-m", "superchat", "login-serve", "--port", str(port), "--nonce", nonce, "--wait", str(wait)]
+    kw = {"stdin": subprocess.DEVNULL, "stdout": out, "stderr": out, "close_fds": True}
     if sys.platform == "win32":
-        kw["creationflags"] = 0x00000008 | 0x00000200   # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        # The `superchat.exe` launcher keeps its children in a Windows job that is torn down when it exits, so
+        # the listener must break away from it to outlive this command.
+        detached = 0x00000008 | 0x00000200          # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        try:
+            child = subprocess.Popen(cmd, creationflags=detached | 0x01000000, **kw)   # + CREATE_BREAKAWAY_FROM_JOB
+        except OSError:                               # the job does not allow breaking away
+            child = subprocess.Popen(cmd, creationflags=detached, **kw)
     else:
-        kw["start_new_session"] = True
-    subprocess.Popen([sys.executable, "-m", "superchat", "login-serve", "--port", str(port), "--nonce", nonce,
-                      "--wait", str(wait)], **kw)
-    for _ in range(80):                              # wait until it is really listening before emailing the link
+        child = subprocess.Popen(cmd, start_new_session=True, **kw)
+    out.close()
+    deadline = _t.time() + 30                        # wait until it is really listening before emailing the link
+    while True:
         try:
             socket.create_connection(("127.0.0.1", port), timeout=0.25).close()
             break
         except OSError:
-            _t.sleep(0.1)
-    else:
-        raise auth.AuthError("Could not start the local sign-in listener.")
+            if child.poll() is not None or _t.time() > deadline:
+                tail = log.read_text(encoding="utf-8", errors="replace").strip().splitlines()[-3:]
+                raise auth.AuthError("Could not start the local sign-in listener"
+                                     + (f": {' / '.join(tail)}" if tail else "") + f" (log: {log}). No email was sent.")
+            _t.sleep(0.15)
     auth.request_code(s, email, redirect_to=f"http://127.0.0.1:{port}/cb/{nonce}")
 
 
@@ -160,8 +171,8 @@ def setup(url=None, key=None, agents="auto") -> int:
             failed = True
             print(f"  {name}: NOT done: {e}")
     print("\nNext: restart Claude Desktop / start a new Claude Code session, then sign in:\n"
-          "  superchat login --email you@company.com   (a code is emailed)\n"
-          "  superchat login --email you@company.com --code <code>\n"
+          "  superchat login --email you@company.com   (then click the emailed link on this computer)\n"
+          "  superchat whoami\n"
           "  superchat doctor")
     return 1 if failed else 0
 
