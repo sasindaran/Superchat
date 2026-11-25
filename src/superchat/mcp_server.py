@@ -277,20 +277,22 @@ def vault_sync() -> dict:
     return vault.sync(_api(), _settings())
 
 
-REVIEW_CAPABILITIES = {"mcp": {"servers": [{"server": "host:superchat", "tools": ["review_list", "push_review"]}]}}
+REVIEW_RESOURCE = "ui://superchat/review.html"
 
 
-@mcp.tool()
+@mcp.resource(REVIEW_RESOURCE, mime_type="text/html;profile=mcp-app")
+def review_app() -> str:
+    """Interactive review interface for MCP Apps hosts."""
+    return resources.files("superchat").joinpath("assets", "review", "template.html").read_text(encoding="utf-8")
+
+
+@mcp.tool(meta={"ui": {"resourceUri": REVIEW_RESOURCE}})
 def review_screen() -> dict:
     """
-    The visual review screen (Claude desktop app only). Publish `html` with the Artifact tool exactly as given, passing
-    `capabilities` unchanged and a title of "Superchat Review". Each person needs their OWN copy: a page can only call a
-    local MCP server (host:superchat) for the artifact's owner. Tell them to open it in the Claude desktop app.
+    Open the interactive Superchat review in a client that supports MCP Apps. It loads the current user's pending
+    items and calls push_review only when the user presses Push. If the client cannot display the app, use text review.
     """
-    html = resources.files("superchat").joinpath("assets", "review", "template.html").read_text(encoding="utf-8")
-    return {"html": html, "capabilities": REVIEW_CAPABILITIES, "title": "Superchat Review",
-            "description": "Review and push the decisions you kept.",
-            "note": "Without the Artifact tool, or outside the Claude desktop app, review in text instead: review_list then push_review."}
+    return {"title": "Superchat Review", "note": "Review and push in the interactive view. If your client cannot display it, use review_list and push_review for a text review."}
 
 
 @mcp.tool()

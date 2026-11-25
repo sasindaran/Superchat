@@ -24,3 +24,9 @@ Deployment notes
 - The embedding model is loaded locally. Initial installation or model download and availability can affect startup.
 - Claude Desktop must be fully restarted, and Claude Code and Codex need new sessions, after changing their local MCP registrations.
 - Installer launchers and the full live employee onboarding flow still require end-to-end testing on each target platform.
+
+Review connection update
+
+- Replaced the review tool's artifact-publishing instruction with an MCP App resource and a host-mediated MCP bridge. The review page requests the pending list and sends one Push through the same MCP server.
+- A failed load no longer says there is nothing to review or displays a zero-item push as if loading succeeded.
+- Tests cover MCP tool metadata, resource MIME type, the review page and a simulated MCP App host including Push. Claude Desktop's actual host rendering and Push remain to be verified with the user.

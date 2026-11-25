@@ -139,6 +139,34 @@ function type(w, el, value) { el.value = value; el.dispatchEvent(new w.Event('ch
   await tick();
   check('markup in data stays text', !w.__pwned && !w.document.getElementById('boom') && !w.document.querySelector('.card img'));
 
+  // MCP Apps use JSON-RPC messages to the parent, rather than the artifact bridge.
+  const appCalls = [];
+  const appDom = new JSDOM('<!doctype html><html><body>' + html + '</body></html>', {
+    runScripts: 'dangerously', pretendToBeVisual: true,
+    beforeParse(win) {
+      const host = { postMessage(msg) {
+        appCalls.push(msg);
+        if (!msg.id) return;
+        let result = {};
+        if (msg.method === 'tools/call' && msg.params.name === 'review_list') {
+          result = { content: [{ type: 'text', text: JSON.stringify(LIST) }] };
+        } else if (msg.method === 'tools/call' && msg.params.name === 'push_review') {
+          result = { content: [{ type: 'text', text: JSON.stringify({ saved: 3 }) }] };
+        }
+        setTimeout(() => win.dispatchEvent(new win.MessageEvent('message', {
+          source: host, data: { jsonrpc: '2.0', id: msg.id, result },
+        })), 0);
+      } };
+      Object.defineProperty(win, 'parent', { value: host });
+    },
+  });
+  await tick(100);
+  w = appDom.window;
+  check('MCP App handshake loads review items', appCalls.some(x => x.method === 'ui/notifications/initialized') && w.document.querySelectorAll('.card').length === 3);
+  type(w, w.document.querySelectorAll('input[aria-label=Company]')[1], 'Acme'); await tick();
+  w.document.getElementById('push').click(); await tick(100);
+  check('MCP App sends one push through its host', appCalls.filter(x => x.method === 'tools/call' && x.params.name === 'push_review').length === 1 && /Pushed/.test(text(w)));
+
   const failed = results.filter((r) => !r.ok);
   results.forEach((r) => console.log((r.ok ? 'PASS ' : 'FAIL ') + r.name + (r.extra ? '  -> ' + r.extra : '')));
   console.log(failed.length ? `FAILED ${failed.length}/${results.length}` : `ALL ${results.length} PASSED`);

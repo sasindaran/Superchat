@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 <!-- superchat -->
 Run Superchat **/review**.
-1. Call `mcp__superchat__review_list`.
+1. Call `mcp__superchat__review_screen` to open the interactive MCP App. If it opens, let the user review and push there. If the client cannot display it, explain that and call `mcp__superchat__review_list` for a text review.
 2. For each item look at `similar`: duplicate (drop it), conflict (keep it and add `conflicts: [{other_id, note}]`), or unrelated.
 3. Show every item with a checkbox, editable text, company (REQUIRED; dropdown from `companies`, or a new name) and product (optional; if empty show a RED warning: "will apply to all of this company's products"). Pre-fill the suggestion only when `suggestion.strength` is `strong`; otherwise leave company blank and ask.
 4. Nothing is pushed until every ticked item has a company. Then ONE call to `mcp__superchat__push_review` with `cutoff` (unchanged from the list), the ticked `items`, and `remove_keep_ids` for the unticked ones (they are deleted for good).

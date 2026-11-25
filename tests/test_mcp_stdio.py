@@ -2,6 +2,7 @@
 import asyncio
 import json
 import sys
+from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -17,7 +18,8 @@ def run(coro):
 
 def params(home):
     return StdioServerParameters(command=sys.executable, args=["-m", "superchat", "mcp"],
-                                 env={"SUPERCHAT_HOME": str(home), "SUPERCHAT_SUPABASE_KEY": "", "PATH": ""})
+                                 env={"SUPERCHAT_HOME": str(home), "SUPERCHAT_SUPABASE_KEY": "", "PATH": "",
+                                      "PYTHONPATH": str(Path(__file__).resolve().parent.parent / "src")})
 
 
 def test_real_stdio_handshake_tools_prompts_and_instructions(tmp_path):
@@ -69,14 +71,18 @@ def test_tools_that_need_sign_in_explain_themselves(tmp_path):
     assert "publishable key is missing" in res.content[0].text or "Not signed in" in res.content[0].text
 
 
-def test_review_screen_tool_returns_a_publishable_page(tmp_path):
+def test_review_screen_exposes_mcp_app_resource(tmp_path):
     async def go():
         async with stdio_client(params(tmp_path)) as (r, w):
             async with ClientSession(r, w) as s:
                 await s.initialize()
-                return json.loads((await s.call_tool("review_screen", {})).content[0].text)
-    out = run(go())
+                tools = await s.list_tools()
+                tool = next(t for t in tools.tools if t.name == "review_screen")
+                resource = await s.read_resource("ui://superchat/review.html")
+                out = json.loads((await s.call_tool("review_screen", {})).content[0].text)
+                return tool, resource, out
+    tool, resource, out = run(go())
     assert out["title"] == "Superchat Review"
-    assert out["capabilities"] == {"mcp": {"servers": [{"server": "host:superchat", "tools": ["review_list", "push_review"]}]}}
-    assert out["html"].lstrip().startswith("<title>Superchat Review</title>") and "host:superchat" in out["html"]
-    assert "<!doctype" not in out["html"].lower() and "<body" not in out["html"].lower()    # the skeleton is added on publish
+    assert tool.meta["ui"]["resourceUri"] == "ui://superchat/review.html"
+    assert resource.contents[0].mimeType == "text/html;profile=mcp-app"
+    assert "ui/initialize" in resource.contents[0].text

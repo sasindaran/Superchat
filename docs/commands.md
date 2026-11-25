@@ -12,8 +12,8 @@ Keeps only what you describe: `/keeponly we retry failed payments 3 times, then 
 
 ## `/review`
 Shows everything kept since your last push. For each item: tick it or not, edit it, set the **company** (required) and **product** (optional; empty product shows a red warning because it then applies to all of that company's products). Look-alikes of saved decisions are flagged so you can mark them *same* or *conflict*. Then **one Push** saves everything in a single transaction. Un-ticked items are deleted for good; to bring one back, `/keep` it again in its chat.
-- In the Claude desktop app, Claude builds a review screen for you (open it there).
-- Elsewhere, the same review runs as text.
+- A client supporting MCP Apps can open the interactive review screen from the `review_screen` tool. Host support and access to the local MCP must be verified for the client in use.
+- If the interactive view is unavailable, review the list in text before asking the agent to push.
 
 ## `/superchat <question>`
 Answers using the knowledge base for **one company**: the company named in your message, else the one linked to your project folder, else names in the chat, else Claude asks. Answers have two labelled parts: **From Superchat DB** (who decided it, when, any conflict) and **Claude's suggestion**. Nothing is saved automatically.

@@ -24,7 +24,7 @@ After `/strict`, for the rest of this session NEVER call `match`, `brief`, `sear
 ## Review (`/review`, or when the person agrees to review)
 1. Call `review_list`. It returns everything kept and not yet pushed, the companies and products, suggestions with evidence, and `similar` saved decisions.
 2. Judge each item: mark `similar` ones as duplicate (drop it), conflict (keep it and add a conflict link), or unrelated.
-3. Show the list. In the Claude desktop app with the Artifact tool, call `review_screen` and publish its `html` as an artifact (pass its `capabilities` and `title` unchanged; tell the person to open it in the desktop app; it loads and pushes by itself). Otherwise show the list as text. Each item can be ticked or unticked and edited. Company is REQUIRED for every ticked item; product is optional but warn in red when it is empty ("will apply to all of this company's products").
+3. Call `review_screen` to open the interactive MCP App in a supporting client. If it cannot open, explain that and show the list as text. Each item can be ticked or unticked and edited. Company is REQUIRED for every ticked item; product is optional but warn when it is empty ("will apply to all of this company's products").
 4. ONE push for the whole list: `push_review`. Never push items one at a time. Unticked items are deleted for good. Nothing is pushed until every ticked item has a company.
 5. If the push fails, nothing was saved; tell the person why and let them fix it.
 

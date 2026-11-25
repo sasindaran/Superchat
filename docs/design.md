@@ -24,7 +24,7 @@ See also [BUILD_PLAN.md](BUILD_PLAN.md) for the original plan.
 - **`push_review` is `SECURITY DEFINER`.** A saved decision can only come into existence through it; members cannot insert saved rows directly. It checks membership and ownership itself.
 - **Embeddings** use `BAAI/bge-small-en-v1.5` (384 numbers) computed locally. The model tag is stored with every vector. Claude writes each decision in clean English at `/keep` time, and that English text is what gets embedded. If the model is unavailable, search falls back to keywords.
 - **Claude Desktop** drafts live in Supabase (author-only); **Claude Code** items live in a local queue. The capture target is chosen from the MCP client's name, and can be forced with `SUPERCHAT_CAPTURE=queue|drafts`.
-- **Review screen** is an artifact calling `host:superchat`. Host servers only work for the artifact's owner and only in the Claude desktop app, so each person publishes their own copy (`review_screen` returns it).
+- **Review screen** is an MCP App served by the local Superchat server. It communicates through the MCP host, and needs a client that supports interactive MCP Apps.
 - **Strict mode** is a Claude Code hook lock (per session id). In Claude Desktop it is an instruction only: one MCP process is shared by all chats there.
 - **The Microsoft Store build of Claude Desktop** keeps its config inside its package folder; the installer writes to every Claude config folder it finds.
 
