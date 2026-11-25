@@ -209,7 +209,7 @@ def _save(tokens: dict) -> dict:
     session = {
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
-        "expires_at": tokens.get("expires_at") or int(time.time()) + int(tokens.get("expires_in", 3600)),
+        "expires_at": int(tokens["expires_at"]) if tokens.get("expires_at") else int(time.time()) + int(tokens.get("expires_in", 3600)),
         "user": {"id": user.get("id"), "email": user.get("email")},
     }
     paths.write_private(paths.session_file(), json.dumps(session))
@@ -232,7 +232,7 @@ def access_token(settings: Settings, client=None) -> str:
         s = load_session()
         if not s:
             raise NotSignedIn("Not signed in. Ask for a code with the `login` tool, then `verify_code`.")
-        if s["expires_at"] - time.time() > 60:
+        if int(s["expires_at"]) - time.time() > 60:
             return s["access_token"]
         r = _client(client).post(f"{settings.supabase_url}/auth/v1/token?grant_type=refresh_token",
                                  headers=_headers(settings), json={"refresh_token": s["refresh_token"]})

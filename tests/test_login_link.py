@@ -213,3 +213,10 @@ def test_background_login_end_to_end_with_a_real_detached_process(supa, ports, t
     assert auth.whoami() == {"id": "u-1", "email": "a@x.test"}
     with pytest.raises(httpx.ConnectError):                                   # the listener is one-shot: gone now
         httpx.post(redirect, content=FRAGMENT)
+
+
+def test_existing_session_with_string_expiry_is_accepted(supa):
+    session = {"access_token": "access", "refresh_token": "refresh",
+               "expires_at": str(int(time.time()) + 3600), "user": {}}
+    auth.paths.write_private(auth.paths.session_file(), json.dumps(session))
+    assert auth.access_token(config.load()) == "access"
