@@ -2,6 +2,7 @@
 import hashlib
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 
@@ -19,10 +20,15 @@ def folder_key(path) -> str | None:
         return None
     p = Path(path).expanduser()
     try:
-        out = subprocess.run(["git", "-C", str(p), "config", "--get", "remote.origin.url"],
-                             capture_output=True, text=True, timeout=5)
-        if out.returncode == 0 and out.stdout.strip():
-            return normalize_remote(out.stdout)
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output:
+            result = subprocess.run(
+                ["git", "-C", str(p), "config", "--get", "remote.origin.url"],
+                stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.DEVNULL, timeout=5,
+            )
+            output.seek(0)
+            remote = output.read().strip()
+        if result.returncode == 0 and remote:
+            return normalize_remote(remote)
     except (OSError, subprocess.SubprocessError):
         pass
     # not a git repo with a remote: a per-machine key (cannot be shared with teammates)
