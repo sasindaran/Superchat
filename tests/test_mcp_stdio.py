@@ -79,10 +79,8 @@ def test_review_screen_exposes_mcp_app_resource(tmp_path):
                 tools = await s.list_tools()
                 tool = next(t for t in tools.tools if t.name == "review_screen")
                 resource = await s.read_resource("ui://superchat/review.html")
-                out = json.loads((await s.call_tool("review_screen", {})).content[0].text)
-                return tool, resource, out
-    tool, resource, out = run(go())
-    assert out["title"] == "Superchat Review"
+                return tool, resource
+    tool, resource = run(go())
     assert tool.meta["ui"]["resourceUri"] == "ui://superchat/review.html"
     assert resource.contents[0].mimeType == "text/html;profile=mcp-app"
     assert "ui/initialize" in resource.contents[0].text

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "superchat": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "superchat",
+        "mcp"
+      ]
+    }
+  }
+}

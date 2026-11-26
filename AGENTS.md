@@ -1,6 +1,6 @@
 # Setting up Superchat (instructions for the AI agent)
 
-You were given this repository's link so you can install **Superchat** for the user on **this computer**. Do every step yourself. Only ask the user for two things: their **work email**, and to **click the sign-in link** that gets emailed to them. Run commands non-interactively. Never edit config files by hand; the commands below do that safely and keep backups.
+You were given this repository's link so you can install **Superchat** for the user on **this computer**. Use a local Claude Code session with permission to run commands on the user's machine. If this session runs in the cloud, explain that local installation requires a local Claude Code session. Use the commands below and preserve existing configuration.
 
 Superchat is the team's shared decision memory: people keep decisions from their Claude chats (`/keep`), review them, and push them to one shared Supabase, tagged by company and product.
 
@@ -19,11 +19,14 @@ Superchat is the team's shared decision memory: people keep decisions from their
    ```
    If this fails with an authentication error, ask the user to sign in to GitHub (`gh auth login`, or sign in via git's credential prompt), then run it again. If the `superchat` command is not found afterwards, run `uv tool update-shell` and use the full path shown by `uv tool dir --bin`.
 
-3. **Set it up** for the apps installed on this computer (Claude Code and Claude Desktop are detected automatically):
+3. **Install the Claude Code plugin** from this repository:
    ```
-   superchat setup
+   claude plugin marketplace add sasindaran/Superchat
+   claude plugin install superchat@superchat-local --scope user
    ```
-   It prints which Supabase project is in use. That is the team's project and is the default; do **not** change it unless the user asks (`superchat setup --url <url>`, and `superchat set --reset-url` to go back).
+   If the marketplace is already installed, check that it points to this repository and update it. Do not remove a different marketplace without asking. The plugin provides its own MCP server, commands, and hooks. Restart Claude Desktop and start a new Code session to load it.
+
+   The package uses the team's Supabase project by default; do **not** change it unless the user asks (`superchat set --url <url>`, and `superchat set --reset-url` to go back).
    If it says the publishable key is not set, the user must get it from the team owner or Supabase (Project Settings > API Keys > publishable key), then run `superchat set --key <key>`.
 
 4. **Sign in.** Ask the user for their work email, then:
@@ -38,7 +41,7 @@ Superchat is the team's shared decision memory: people keep decisions from their
    ```
    superchat doctor --deep
    ```
-   Report every line to the user. `[ok]` is good. `[FAIL]` needs fixing: read its hint and fix it, or tell the user what to do. (`--deep` downloads a ~65 MB search model the first time; that is expected.)
+   Report every line to the user. The doctor checks the standalone Claude Code configuration, so confirm the plugin separately with `claude plugin list` and test its tools in a new session. (`--deep` downloads a ~65 MB search model the first time; that is expected.)
 
 6. **Finish.** Tell the user to **restart Claude Desktop** and **start a new Claude Code session**. Then explain the commands: `/keep`, `/keeponly <text>`, `/superchat <question>`, `/superchatall <question>`, `/strict`, `/review` (see `docs/commands.md`).
 

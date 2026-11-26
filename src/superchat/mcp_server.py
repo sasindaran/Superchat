@@ -286,13 +286,13 @@ def review_app() -> str:
     return resources.files("superchat").joinpath("assets", "review", "template.html").read_text(encoding="utf-8")
 
 
-@mcp.tool(meta={"ui": {"resourceUri": REVIEW_RESOURCE}})
+@mcp.tool(meta={"ui": {"resourceUri": REVIEW_RESOURCE}, "ui/resourceUri": REVIEW_RESOURCE})
 def review_screen() -> dict:
     """
-    Open the interactive Superchat review in a client that supports MCP Apps. It loads the current user's pending
-    items and calls push_review only when the user presses Push. If the client cannot display the app, use text review.
+    Open the interactive Superchat review in a client that supports MCP Apps. The view displays the current user's
+    pending items. If it reports read-only or cannot open, use text review and wait for the user's explicit push request.
     """
-    return {"title": "Superchat Review", "note": "Review and push in the interactive view. If your client cannot display it, use review_list and push_review for a text review."}
+    return review_build.build(_api(), _settings())
 
 
 @mcp.tool()

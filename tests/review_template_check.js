@@ -146,6 +146,12 @@ function type(w, el, value) { el.value = value; el.dispatchEvent(new w.Event('ch
     beforeParse(win) {
       const host = { postMessage(msg) {
         appCalls.push(msg);
+        if (msg.method === 'ui/notifications/initialized') {
+          setTimeout(() => win.dispatchEvent(new win.MessageEvent('message', {
+            source: host, data: { jsonrpc: '2.0', method: 'ui/notifications/tool-result',
+              params: { content: [{ type: 'text', text: JSON.stringify(LIST) }] } },
+          })), 0);
+        }
         if (!msg.id) return;
         let result = {};
         if (msg.method === 'tools/call' && msg.params.name === 'review_list') {

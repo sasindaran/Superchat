@@ -1,0 +1,8 @@
+{
+  "name": "superchat",
+  "version": "0.2.0",
+  "description": "Shared decision memory for your team: /keep decisions, /review and push them to the company knowledge base, answer from it with /superchat.",
+  "author": {
+    "name": "StratAI"
+  }
+}

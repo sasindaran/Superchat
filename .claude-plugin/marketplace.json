@@ -1,0 +1,8 @@
+{
+  "name": "superchat-local",
+  "description": "Superchat decision capture and shared knowledge tools.",
+  "owner": { "name": "StratAI" },
+  "plugins": [
+    { "name": "superchat", "source": "./", "description": "Shared decision memory: /keep, /review, /superchat." }
+  ]
+}

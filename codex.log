@@ -30,3 +30,9 @@ Review connection update
 - Replaced the review tool's artifact-publishing instruction with an MCP App resource and a host-mediated MCP bridge. The review page requests the pending list and sends one Push through the same MCP server.
 - A failed load no longer says there is nothing to review or displays a zero-item push as if loading succeeded.
 - Tests cover MCP tool metadata, resource MIME type, the review page and a simulated MCP App host including Push. Claude Desktop's actual host rendering and Push remain to be verified with the user.
+
+Plugin and review update — 2026-11-26
+
+- Added a Claude Code plugin marketplace, plugin commands, MCP configuration and hook launcher. The launcher uses an existing virtual environment when possible and avoids blocking prompts on a failed environment lookup.
+- The review tool returns its pending items in the initial MCP App result. In a live Claude Code GUI test, the review displayed a captured test item; this host reported that IPC for app-initiated MCP calls was unavailable, so the screen was read-only and Push remains unverified.
+- Updated setup instructions to request a local Claude Code session and install the plugin from the repository. A cloud session cannot install on the user's computer.

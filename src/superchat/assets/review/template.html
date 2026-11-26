@@ -102,7 +102,7 @@ button.ghost{font:500 14px var(--sans);background:transparent;color:var(--ink);b
     ]
   };
 
-  var mcp = null, list = null, items = [], example = false, pushing = false, confirmed = false, done = false, loadFailed = false;
+  var mcp = null, list = null, items = [], example = false, pushing = false, confirmed = false, done = false, loadFailed = false, receivedInitial = false;
   var $ = function (id) { return document.getElementById(id); };
 
   function h(tag, attrs) {
@@ -206,7 +206,6 @@ button.ghost{font:500 14px var(--sans);background:transparent;color:var(--ink);b
     var on = items.filter(function (s) { return s.checked; }), off = items.length - on.length, bad = invalid().length;
     var s = $('sum'); s.textContent = '';
     if (done) { s.appendChild(h('span', { text: 'Pushed.' })); $('push').disabled = true; return; }
-    if (loadFailed) { s.appendChild(h('span', { text: 'Review could not be loaded.' })); $('push').disabled = true; return; }
     s.appendChild(h('span', { text: 'Push ' + on.length + (on.length === 1 ? ' item' : ' items') + (off ? ', delete ' + off + ' un-ticked for good' : '') }));
     if (bad) s.appendChild(h('small', { text: bad + (bad === 1 ? ' item needs' : ' items need') + ' a company before you can push.' }));
     else if (off && !confirmed) s.appendChild(h('small', { text: 'Un-ticked items are removed completely. Press Push, then confirm.' }));
@@ -237,7 +236,7 @@ button.ghost{font:500 14px var(--sans);background:transparent;color:var(--ink);b
     if (c === 'approval_required' || c === 'not_granted') return ['warn', 'Needs your approval', 'Allow this page to use Superchat when Claude asks, then press Push again.'];
     if (c === 'server_not_connected') return ['bad', 'Superchat is not connected', 'Open this page in the Claude desktop app, with the superchat MCP server installed (run: superchat setup) and Claude restarted.'];
     if (c === 'not_in_manifest') return ['bad', 'This page is not allowed to use Superchat', 'Re-open it and allow Superchat when asked.'];
-    if (c === 'server_unavailable' || c === 'upstream_error') return ['warn', 'Superchat did not answer', 'Nothing may have been saved. Press Load again to see what is still waiting before pushing again.'];
+    if (c === 'server_unavailable' || c === 'upstream_error') return ['warn', 'Superchat did not answer', (e.message || 'Connection failed') + '. Reopen review to retry.'];
     if (c === 'tool_error') return ['bad', 'Nothing was pushed', (e.message || 'The push was refused.') + ' Your list is unchanged.'];
     return ['bad', 'Something went wrong', (e && e.message) || 'Unknown error.'];
   }
@@ -272,45 +271,73 @@ button.ghost{font:500 14px var(--sans);background:transparent;color:var(--ink);b
     items.forEach(function (s) { if (s.checked && !s.company.trim()) s.company = v; }); confirmed = false; render();
   });
 
+  // ---- host connection ----------------------------------------------------------------------------------------
+  // 1) MCP App: Claude renders this page inline from the superchat server (ui://superchat/review) and we talk to the
+  //    server over postMessage (MCP Apps protocol). 2) Fallback: a published artifact using window.claude.use('mcp').
   function appBridge() {
-    var nextId = 0, pending = {};
-    window.addEventListener('message', function (event) {
-      if (event.source !== window.parent || !event.data || event.data.jsonrpc !== '2.0') return;
-      var msg = event.data, entry = pending[msg.id];
-      if (!entry) return;
-      delete pending[msg.id]; clearTimeout(entry.timer);
-      if (msg.error) entry.reject(new Error(msg.error.message || 'MCP request failed'));
-      else entry.resolve(msg.result);
-    });
-    function request(method, params) {
-      return new Promise(function (resolve, reject) {
-        var id = ++nextId;
-        pending[id] = { resolve: resolve, reject: reject, timer: setTimeout(function () {
-          delete pending[id]; reject(new Error('The review connection timed out.'));
-        }, 30000) };
-        window.parent.postMessage({ jsonrpc: '2.0', id: id, method: method, params: params }, '*');
-      });
-    }
-    return request('ui/initialize', { appInfo: { name: 'Superchat Review', version: '1.0.0' },
-      appCapabilities: {}, protocolVersion: '2026-01-26' }).then(function () {
-      window.parent.postMessage({ jsonrpc: '2.0', method: 'ui/notifications/initialized', params: {} }, '*');
-      return { callTool: function (server, name, args) {
-        return request('tools/call', { name: name, arguments: args }).then(function (result) {
-          if (result.isError) throw new Error((result.content || []).map(function (c) { return c.text || ''; }).join(' ') || 'Tool call failed');
-          var content = result.structuredContent;
-          if (!content) {
-            var text = (result.content || []).find(function (c) { return c.type === 'text'; });
-            content = text ? JSON.parse(text.text) : {};
+    return new Promise(function (resolve, reject) {
+      if (window.parent === window) return reject(new Error('not framed'));
+      var nextId = 1, waiting = {};
+      function rpc(method, params) {
+        return new Promise(function (ok, bad) { var id = nextId++; waiting[id] = { ok: ok, bad: bad }; window.parent.postMessage({ jsonrpc: '2.0', id: id, method: method, params: params }, '*'); });
+      }
+      window.addEventListener('message', function (ev) {
+        if (ev.source !== window.parent) return;
+        var m = ev.data;
+        if (m && m.method === 'ui/notifications/tool-result') {
+          var result = m.params || {}, initial = result.structuredContent;
+          if (!initial) {
+            var text = (result.content || []).filter(function (c) { return c.type === 'text'; }).map(function (c) { return c.text; }).join('');
+            try { initial = JSON.parse(text); } catch (e) { initial = null; }
           }
-          return { payload: content };
-        });
-      } };
+          if (initial && initial.result && !initial.items) initial = initial.result;
+          if (initial && Array.isArray(initial.items)) {
+            receivedInitial = true; list = initial; items = initial.items.map(toState); example = false;
+            loadFailed = false; done = false; confirmed = false; render();
+            status('warn', 'Review loaded', 'Checking whether this client can send changes to Superchat.');
+            if (mcp) checkAppConnection();
+          }
+          return;
+        }
+        if (!m || m.jsonrpc !== '2.0' || m.id == null || !waiting[m.id]) return;
+        var w = waiting[m.id]; delete waiting[m.id];
+        if (m.error) { var e = new Error(m.error.message || 'request failed'); e.code = 'upstream_error'; w.bad(e); } else w.ok(m.result);
+      });
+      rpc('ui/initialize', { protocolVersion: '2026-01-26', appInfo: { name: 'superchat-review', version: '1.0.0' }, appCapabilities: {} })
+        .then(function () {
+          window.parent.postMessage({ jsonrpc: '2.0', method: 'ui/notifications/initialized', params: {} }, '*');
+          resolve({ callTool: function (_server, name, args) {
+            return rpc('tools/call', { name: name, arguments: args || {} }).then(function (r) {
+              if (r && r.isError) { var e = new Error(((r.content || [])[0] || {}).text || 'The tool refused.'); e.code = 'tool_error'; throw e; }
+              var payload = r && r.structuredContent;
+              if (!payload) { var txt = ((r && r.content) || []).filter(function (c) { return c.type === 'text'; }).map(function (c) { return c.text; }).join(''); try { payload = JSON.parse(txt); } catch (x) { payload = {}; } }
+              if (payload && payload.result !== undefined && Object.keys(payload).length === 1) payload = payload.result;
+              return { payload: payload };
+            });
+          } });
+        }).catch(reject);
+      setTimeout(function () { reject(new Error('no MCP App host')); }, 2500);
     });
   }
 
   list = { companies: [], items: [] }; render();
-  var gate = (window.claude && window.claude.use) ? window.claude.use('mcp') : appBridge();
-  var timer = setTimeout(function () { if (!list.items.length && !mcp) load(); }, 12000);
-  gate.then(function (m) { clearTimeout(timer); mcp = m; load(); }).catch(function () { clearTimeout(timer); mcp = null; load(); });
+  function useArtifactHost() {
+    var gate = (window.claude && window.claude.use) ? window.claude.use('mcp') : Promise.resolve(null);
+    var timer = setTimeout(function () { if (!list.items.length && !mcp) load(); }, 12000);
+    gate.then(function (m) { clearTimeout(timer); mcp = m; load(); }).catch(function () { clearTimeout(timer); mcp = null; load(); });
+  }
+  function checkAppConnection() {
+    mcp.callTool(SERVER, 'review_list', {}).then(function () {
+      status('', '', ''); summary();
+    }).catch(function (e) {
+      mcp = null; summary();
+      status('warn', 'Review is read-only', 'This Claude client cannot send changes to the local MCP: ' + (e.message || 'connection unavailable') + '. Your pending items are unchanged.');
+    });
+  }
+  appBridge().then(function (b) {
+    mcp = b;
+    if (receivedInitial) checkAppConnection();
+    else setTimeout(function () { if (!receivedInitial) load(); }, 5000);
+  }).catch(useArtifactHost);
 })();
 </script>
