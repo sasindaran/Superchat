@@ -12,7 +12,7 @@ Download or clone this repository. On Windows, double-click `install.bat`. On ma
 
 In a local Claude Code session on your computer, give it this repository link and ask it to follow [AGENTS.md](AGENTS.md) to install the plugin. Sign in with your work email and the emailed link when needed. A cloud session cannot directly install software on your computer.
 
-You can also install the plugin directly in Claude Code with `/plugin install superchat --marketplace sasindaran/Superchat`.
+You can also install the plugin directly in Claude Code with `/plugin install superchat --marketplace sasindaran/Superchat`. For the interactive review in Claude Desktop, also run `superchat setup --agents claude-desktop`, then restart the desktop app and start a new session. On affected Claude versions, the desktop-configured Superchat connector can push from the review screen while the plugin-hosted screen may report an IPC error.
 
 ## Commands
 

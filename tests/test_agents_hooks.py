@@ -90,6 +90,20 @@ def test_uninstall_removes_only_ours(sandbox):
 
 # ---- Claude Desktop installer ----------------------------------------------------------------------------
 
+def test_windows_desktop_config_detects_current_store_data(sandbox, monkeypatch):
+    monkeypatch.delenv("SUPERCHAT_CLAUDE_DESKTOP_DIR")
+    monkeypatch.setattr(claude_desktop.sys, "platform", "win32")
+    monkeypatch.setenv("LOCALAPPDATA", str(sandbox / "local"))
+    monkeypatch.setenv("APPDATA", str(sandbox / "roaming"))
+    current = sandbox / "local" / "Claude-Data" / "claude_example"
+    legacy = sandbox / "local" / "Packages" / "Claude_example" / "LocalCache" / "Roaming" / "Claude"
+    current.mkdir(parents=True)
+    legacy.mkdir(parents=True)
+    assert claude_desktop.config_dirs() == [current, legacy]
+    assert len(claude_desktop.install()) == 2
+    assert (current / claude_desktop.FILE).exists()
+    assert (legacy / claude_desktop.FILE).exists()
+
 def test_desktop_install_creates_config_and_keeps_other_servers(sandbox):
     f = sandbox / "desktop" / "Claude" / claude_desktop.FILE
     f.write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}, "theme": "dark"}))

@@ -23,8 +23,9 @@ Superchat is the team's shared decision memory: people keep decisions from their
    ```
    claude plugin marketplace add sasindaran/Superchat
    claude plugin install superchat@superchat-local --scope user
+   superchat setup --agents claude-desktop
    ```
-   If the marketplace is already installed, check that it points to this repository and update it. Do not remove a different marketplace without asking. The plugin provides its own MCP server, commands, and hooks. Restart Claude Desktop and start a new Code session to load it.
+   If the marketplace is already installed, check that it points to this repository and update it. Do not remove a different marketplace without asking. The plugin provides commands and hooks. The Desktop registration provides a review app connection on Claude versions where a plugin-hosted app cannot call its MCP server. Restart Claude Desktop and start a new Code session to load both.
 
    The package uses the team's Supabase project by default; do **not** change it unless the user asks (`superchat set --url <url>`, and `superchat set --reset-url` to go back).
    If it says the publishable key is not set, the user must get it from the team owner or Supabase (Project Settings > API Keys > publishable key), then run `superchat set --key <key>`.

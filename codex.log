@@ -36,3 +36,8 @@ Plugin and review update — 2026-11-26
 - Added a Claude Code plugin marketplace, plugin commands, MCP configuration and hook launcher. The launcher uses an existing virtual environment when possible and avoids blocking prompts on a failed environment lookup.
 - The review tool returns its pending items in the initial MCP App result. In a live Claude Code GUI test, the review displayed a captured test item; this host reported that IPC for app-initiated MCP calls was unavailable, so the screen was read-only and Push remains unverified.
 - Updated setup instructions to request a local Claude Code session and install the plugin from the repository. A cloud session cannot install on the user's computer.
+
+Desktop review connection — 2026-11-27
+
+- Detect current Windows Store Claude-Data configuration as well as older configuration folders, and set up the Desktop MCP during agent installation.
+- Prefer the Desktop MCP for review when available. In the Claude GUI, the Desktop-hosted review reported one saved after Push; a fresh chat retrieved the test project. The plugin-hosted review can still report an IPC error in affected Claude versions.

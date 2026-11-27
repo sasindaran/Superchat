@@ -24,6 +24,12 @@ def config_dirs() -> list:
     found = []
     if sys.platform == "win32":
         local = Path(os.environ.get("LOCALAPPDATA", ""))
+        # Current Store builds keep their actual user data outside the package's
+        # redirected Roaming folder; retain the latter for older installations.
+        data = local / "Claude-Data"
+        for d in sorted(data.glob("claude_*")) if data.exists() else []:
+            if d.is_dir():
+                found.append(d)
         for pkg in sorted((local / "Packages").glob("Claude_*")) if (local / "Packages").exists() else []:
             d = pkg / "LocalCache" / "Roaming" / "Claude"
             if d.exists():
